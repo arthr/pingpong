@@ -6,6 +6,8 @@ let paddleWidth = 10, paddleHeight = 100;
 let ball = { x: canvas.width / 2, y: canvas.height / 2 };
 let playerPaddle = { x: 0, y: canvas.height / 2 - paddleHeight / 2 };
 let opponentPaddles = {}; // Armazena as raquetes dos oponentes
+let playerColor = '#fff';
+let opponentColors = {};
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -20,12 +22,13 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Desenhar a raquete do jogador
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = playerColor;
     ctx.fillRect(playerPaddle.x, playerPaddle.y, paddleWidth, paddleHeight);
 
     // Desenhar as raquetes dos oponentes
     for (let id in opponentPaddles) {
         let paddle = opponentPaddles[id];
+        ctx.fillStyle = opponentColors[id];
         ctx.fillRect(paddle.x, paddle.y, paddleWidth, paddleHeight);
     }
 
@@ -48,9 +51,13 @@ canvas.addEventListener('touchmove', movePaddle);
 
 socket.on('currentState', (state) => {
     opponentPaddles = {};
+    opponentColors = {};
     for (let id in state.players) {
         if (id !== socket.id) {
             opponentPaddles[id] = { x: canvas.width - paddleWidth, y: state.players[id].paddleY };
+            opponentColors[id] = state.players[id].color;
+        } else {
+            playerColor = state.players[id].color;
         }
     }
     ball = state.ball;
@@ -58,12 +65,14 @@ socket.on('currentState', (state) => {
 
 socket.on('newPlayer', (data) => {
     if (data.playerId !== socket.id) {
-        opponentPaddles[data.playerId] = { x: canvas.width - paddleWidth, y: data.paddleY };
+        opponentPaddles[data.playerId] = { x: canvas.width - paddleWidth, y: data.playerData.paddleY };
+        opponentColors[data.playerId] = data.playerData.color;
     }
 });
 
 socket.on('playerDisconnected', (playerId) => {
     delete opponentPaddles[playerId];
+    delete opponentColors[playerId];
 });
 
 socket.on('movePaddle', (data) => {
@@ -73,6 +82,10 @@ socket.on('movePaddle', (data) => {
 });
 
 socket.on('ballData', (data) => {
+    ball = data;
+});
+
+socket.on('resetBall', (data) => {
     ball = data;
 });
 
