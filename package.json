@@ -1,0 +1,25 @@
+{
+  "name": "pingpong",
+  "version": "1.0.0",
+  "description": " Jogo de Ping Pong implementando Socket",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arthr/pingpong.git"
+  },
+  "keywords": [
+    "pingpong",
+    "ping",
+    "pong",
+    "socket"
+  ],
+  "author": "Arthur Morais",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/arthr/pingpong/issues"
+  },
+  "homepage": "https://github.com/arthr/pingpong#readme"
+}
