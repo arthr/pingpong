@@ -90,7 +90,7 @@ setInterval(() => {
 
         io.emit('ballData', ball);
     }
-}, 1000 / 60);
+}, 1000 / 30);
 
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

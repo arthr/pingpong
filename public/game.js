@@ -96,7 +96,7 @@ function touchMove(event) {
 
     if (isDragging) {
         let deltaY = touchY - rect.top - paddleHeight / 2;
-        playerPaddle.y = deltaY;
+        playerPaddle.y += deltaY - playerPaddle.y; // Corrigir movimentação da raquete
 
         // Limitar o movimento da raquete dentro dos limites da área jogável
         if (playerPaddle.y < 0) {
@@ -155,8 +155,10 @@ socket.on('currentState', (state) => {
 
     // Verificar se estamos aguardando mais jogadores
     if (currentPlayers >= MIN_PLAYERS) {
-        isWaitingForPlayers = false;
-        startCountdown();
+        if (isWaitingForPlayers) {
+            isWaitingForPlayers = false;
+            startCountdown();
+        }
     } else {
         isWaitingForPlayers = true;
     }
@@ -173,8 +175,10 @@ socket.on('newPlayer', (data) => {
 
         // Verificar se estamos aguardando mais jogadores
         if (currentPlayers >= MIN_PLAYERS) {
-            isWaitingForPlayers = false;
-            startCountdown();
+            if (isWaitingForPlayers) {
+                isWaitingForPlayers = false;
+                startCountdown();
+            }
         } else {
             isWaitingForPlayers = true;
         }
@@ -191,8 +195,10 @@ socket.on('playerDisconnected', (playerId) => {
 
         // Verificar se estamos aguardando mais jogadores
         if (currentPlayers >= MIN_PLAYERS) {
-            isWaitingForPlayers = false;
-            startCountdown();
+            if (isWaitingForPlayers) {
+                isWaitingForPlayers = false;
+                startCountdown();
+            }
         } else {
             isWaitingForPlayers = true;
         }
