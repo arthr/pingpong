@@ -1,24 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>Ping Pong Game</title>
+    <title>Pong Game</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #fff;
+            /* Fundo branco */
         }
 
         canvas {
-            display: block;
             background: #000;
+            /* Área jogável preta */
         }
     </style>
 </head>
 
 <body>
-    <canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
     <script src="/socket.io/socket.io.js"></script>
     <script src="game.js"></script>
 </body>
