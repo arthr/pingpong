@@ -50,11 +50,12 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('A user disconnected:', socket.id);
+        const wasPlayer = players[socket.id] && players[socket.id].isPlayer;
         delete players[socket.id];
 
-        if (Object.keys(players).length < 2) {
+        if (wasPlayer && Object.keys(players).filter(id => players[id].isPlayer).length < 2) {
             resetBall();
-            io.emit('resetBall', ball);
+            io.emit('resetBall', ball); // Envia a posição resetada da bola aos clientes
         }
 
         socket.broadcast.emit('playerDisconnected', socket.id);
@@ -75,8 +76,10 @@ io.on('connection', (socket) => {
     });
 });
 
+const BALL_UPDATE_INTERVAL = 1000 / 30; // Atualiza a cada 30 frames por segundo
+
 setInterval(() => {
-    if (Object.keys(players).length === 2) {
+    if (Object.keys(players).filter(id => players[id].isPlayer).length === 2) {
         ball.x += ball.speedX;
         ball.y += ball.speedY;
 
@@ -90,7 +93,7 @@ setInterval(() => {
 
         io.emit('ballData', ball);
     }
-}, 1000 / 30);
+}, BALL_UPDATE_INTERVAL);
 
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
