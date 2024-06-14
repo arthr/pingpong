@@ -4,6 +4,7 @@ const ctx = canvas.getContext('2d');
 
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
+const MIN_PLAYERS = 2;
 
 let paddleWidth = 10, paddleHeight = 100;
 let ball = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2 };
@@ -14,6 +15,8 @@ let opponentColors = {};
 let playerSide = 'left';
 let isDragging = false; // Variável para rastrear se a barra está sendo arrastada
 let isWaitingForPlayers = true; // Variável para rastrear se estamos aguardando mais jogadores
+let currentPlayers = 0; // Número atual de jogadores
+let countdown = 3; // Contagem regressiva para o início do jogo
 
 function resizeCanvas() {
     canvas.width = GAME_WIDTH;
@@ -32,31 +35,40 @@ window.addEventListener('resize', resizeCanvas);
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Desenhar a raquete do jogador
-    ctx.fillStyle = playerColor;
-    ctx.fillRect(playerPaddle.x, playerPaddle.y, paddleWidth, paddleHeight);
-
-    // Desenhar as raquetes dos oponentes
-    for (let id in opponentPaddles) {
-        let paddle = opponentPaddles[id];
-        ctx.fillStyle = opponentColors[id];
-        ctx.fillRect(paddle.x, paddle.y, paddleWidth, paddleHeight);
-    }
-
-    // Desenhar a bola
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2, true);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-
-    // Desenhar mensagem de aguardando mais jogadores
     if (isWaitingForPlayers) {
+        // Desenhar mensagem de aguardando mais jogadores
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; // Fundo branco semitransparente
         ctx.fillRect(GAME_WIDTH / 4, GAME_HEIGHT / 3, GAME_WIDTH / 2, GAME_HEIGHT / 3);
         ctx.fillStyle = '#000';
         ctx.font = '20px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('Aguardando mais jogadores', GAME_WIDTH / 2, GAME_HEIGHT / 2);
+        ctx.fillText('Aguardando mais jogadores', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20);
+        ctx.fillText(`Jogadores conectados: ${currentPlayers}/${MIN_PLAYERS}`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
+    } else if (countdown > 0) {
+        // Desenhar contagem regressiva
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; // Fundo branco semitransparente
+        ctx.fillRect(GAME_WIDTH / 4, GAME_HEIGHT / 3, GAME_WIDTH / 2, GAME_HEIGHT / 3);
+        ctx.fillStyle = '#000';
+        ctx.font = '40px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(countdown, GAME_WIDTH / 2, GAME_HEIGHT / 2);
+    } else {
+        // Desenhar a raquete do jogador
+        ctx.fillStyle = playerColor;
+        ctx.fillRect(playerPaddle.x, playerPaddle.y, paddleWidth, paddleHeight);
+
+        // Desenhar as raquetes dos oponentes
+        for (let id in opponentPaddles) {
+            let paddle = opponentPaddles[id];
+            ctx.fillStyle = opponentColors[id];
+            ctx.fillRect(paddle.x, paddle.y, paddleWidth, paddleHeight);
+        }
+
+        // Desenhar a bola
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2, true);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
     }
 }
 
@@ -119,42 +131,72 @@ canvas.addEventListener('touchcancel', endDrag);
 socket.on('currentState', (state) => {
     opponentPaddles = {};
     opponentColors = {};
+    let playerCount = 0;
     for (let id in state.players) {
-        if (id !== socket.id) {
-            let side = state.players[id].side === 'left' ? 0 : canvas.width - paddleWidth;
-            opponentPaddles[id] = { x: side, y: state.players[id].paddleY };
-            opponentColors[id] = state.players[id].color;
-        } else {
-            playerColor = state.players[id].color;
-            playerSide = state.players[id].side;
-            if (playerSide === 'right') {
-                playerPaddle.x = canvas.width - paddleWidth;
+        if (state.players[id].isPlayer) {
+            playerCount++;
+            if (id !== socket.id) {
+                let side = state.players[id].side === 'left' ? 0 : canvas.width - paddleWidth;
+                opponentPaddles[id] = { x: side, y: state.players[id].paddleY };
+                opponentColors[id] = state.players[id].color;
+            } else {
+                playerColor = state.players[id].color;
+                playerSide = state.players[id].side;
+                if (playerSide === 'right') {
+                    playerPaddle.x = canvas.width - paddleWidth;
+                }
             }
         }
     }
     ball = state.ball;
 
+    // Atualizar número atual de jogadores
+    currentPlayers = playerCount;
+
     // Verificar se estamos aguardando mais jogadores
-    isWaitingForPlayers = Object.keys(state.players).length < 2;
+    if (currentPlayers >= MIN_PLAYERS) {
+        isWaitingForPlayers = false;
+        startCountdown();
+    } else {
+        isWaitingForPlayers = true;
+    }
 });
 
 socket.on('newPlayer', (data) => {
-    if (data.playerId !== socket.id) {
+    if (data.playerData.isPlayer) {
         let side = data.playerData.side === 'left' ? 0 : canvas.width - paddleWidth;
         opponentPaddles[data.playerId] = { x: side, y: data.playerData.paddleY };
         opponentColors[data.playerId] = data.playerData.color;
-    }
 
-    // Verificar se estamos aguardando mais jogadores
-    isWaitingForPlayers = Object.keys(opponentPaddles).length < 1;
+        // Atualizar número atual de jogadores
+        currentPlayers++;
+
+        // Verificar se estamos aguardando mais jogadores
+        if (currentPlayers >= MIN_PLAYERS) {
+            isWaitingForPlayers = false;
+            startCountdown();
+        } else {
+            isWaitingForPlayers = true;
+        }
+    }
 });
 
 socket.on('playerDisconnected', (playerId) => {
-    delete opponentPaddles[playerId];
-    delete opponentColors[playerId];
+    if (opponentPaddles[playerId]) {
+        delete opponentPaddles[playerId];
+        delete opponentColors[playerId];
 
-    // Verificar se estamos aguardando mais jogadores
-    isWaitingForPlayers = Object.keys(opponentPaddles).length < 1;
+        // Atualizar número atual de jogadores
+        currentPlayers--;
+
+        // Verificar se estamos aguardando mais jogadores
+        if (currentPlayers >= MIN_PLAYERS) {
+            isWaitingForPlayers = false;
+            startCountdown();
+        } else {
+            isWaitingForPlayers = true;
+        }
+    }
 });
 
 socket.on('movePaddle', (data) => {
@@ -170,6 +212,16 @@ socket.on('ballData', (data) => {
 socket.on('resetBall', (data) => {
     ball = data;
 });
+
+function startCountdown() {
+    countdown = 3;
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) {
+            clearInterval(countdownInterval);
+        }
+    }, 1000);
+}
 
 function gameLoop() {
     draw();
