@@ -3,8 +3,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 let paddleWidth = 10, paddleHeight = 100;
-let ballX = canvas.width / 2, ballY = canvas.height / 2;
-let ballSpeedX = 5, ballSpeedY = 5;
+let ball = { x: canvas.width / 2, y: canvas.height / 2 };
 let playerPaddle = { x: 0, y: canvas.height / 2 - paddleHeight / 2 };
 let opponentPaddles = {}; // Armazena as raquetes dos oponentes
 
@@ -32,23 +31,8 @@ function draw() {
 
     // Desenhar a bola
     ctx.beginPath();
-    ctx.arc(ballX, ballY, 10, 0, Math.PI * 2, true);
+    ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2, true);
     ctx.fill();
-}
-
-function moveBall() {
-    ballX += ballSpeedX;
-    ballY += ballSpeedY;
-
-    if (ballY + 10 > canvas.height || ballY - 10 < 0) {
-        ballSpeedY = -ballSpeedY;
-    }
-
-    if (ballX + 10 > canvas.width || ballX - 10 < 0) {
-        ballSpeedX = -ballSpeedX;
-    }
-
-    socket.emit('ballData', { x: ballX, y: ballY });
 }
 
 function movePaddle(event) {
@@ -62,13 +46,14 @@ function movePaddle(event) {
 canvas.addEventListener('mousemove', movePaddle);
 canvas.addEventListener('touchmove', movePaddle);
 
-socket.on('currentPlayers', (players) => {
+socket.on('currentState', (state) => {
     opponentPaddles = {};
-    for (let id in players) {
+    for (let id in state.players) {
         if (id !== socket.id) {
-            opponentPaddles[id] = { x: canvas.width - paddleWidth, y: players[id].paddleY };
+            opponentPaddles[id] = { x: canvas.width - paddleWidth, y: state.players[id].paddleY };
         }
     }
+    ball = state.ball;
 });
 
 socket.on('newPlayer', (data) => {
@@ -88,13 +73,11 @@ socket.on('movePaddle', (data) => {
 });
 
 socket.on('ballData', (data) => {
-    ballX = data.x;
-    ballY = data.y;
+    ball = data;
 });
 
 function gameLoop() {
     draw();
-    moveBall();
     requestAnimationFrame(gameLoop);
 }
 
