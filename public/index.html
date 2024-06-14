@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
     <title>Ping Pong Game</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             margin: 0;
@@ -11,15 +11,14 @@
         }
 
         canvas {
-            background: #000;
             display: block;
-            margin: 0 auto;
+            background: #000;
         }
     </style>
 </head>
 
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <canvas id="gameCanvas"></canvas>
     <script src="/socket.io/socket.io.js"></script>
     <script src="game.js"></script>
 </body>
