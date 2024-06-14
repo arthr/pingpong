@@ -13,6 +13,7 @@ let playerColor = '#fff';
 let opponentColors = {};
 let playerSide = 'left';
 let isDragging = false; // Variável para rastrear se a barra está sendo arrastada
+let isWaitingForPlayers = true; // Variável para rastrear se estamos aguardando mais jogadores
 
 function resizeCanvas() {
     canvas.width = GAME_WIDTH;
@@ -47,6 +48,16 @@ function draw() {
     ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2, true);
     ctx.fillStyle = '#fff';
     ctx.fill();
+
+    // Desenhar mensagem de aguardando mais jogadores
+    if (isWaitingForPlayers) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; // Fundo branco semitransparente
+        ctx.fillRect(GAME_WIDTH / 4, GAME_HEIGHT / 3, GAME_WIDTH / 2, GAME_HEIGHT / 3);
+        ctx.fillStyle = '#000';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Aguardando mais jogadores', GAME_WIDTH / 2, GAME_HEIGHT / 2);
+    }
 }
 
 function movePaddle(event) {
@@ -122,6 +133,9 @@ socket.on('currentState', (state) => {
         }
     }
     ball = state.ball;
+
+    // Verificar se estamos aguardando mais jogadores
+    isWaitingForPlayers = Object.keys(state.players).length < 2;
 });
 
 socket.on('newPlayer', (data) => {
@@ -130,11 +144,17 @@ socket.on('newPlayer', (data) => {
         opponentPaddles[data.playerId] = { x: side, y: data.playerData.paddleY };
         opponentColors[data.playerId] = data.playerData.color;
     }
+
+    // Verificar se estamos aguardando mais jogadores
+    isWaitingForPlayers = Object.keys(opponentPaddles).length < 1;
 });
 
 socket.on('playerDisconnected', (playerId) => {
     delete opponentPaddles[playerId];
     delete opponentColors[playerId];
+
+    // Verificar se estamos aguardando mais jogadores
+    isWaitingForPlayers = Object.keys(opponentPaddles).length < 1;
 });
 
 socket.on('movePaddle', (data) => {
