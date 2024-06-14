@@ -153,7 +153,6 @@ socket.on('resetBall', (data) => {
 
 function gameLoop() {
     draw();
-    moveBall(); // Chama a função moveBall em cada frame
     requestAnimationFrame(gameLoop);
 }
 
