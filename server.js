@@ -29,7 +29,8 @@ io.on('connection', (socket) => {
         players[socket.id] = {
             paddleY: 300,
             color: color,
-            isPlayer: true
+            isPlayer: true,
+            side: Object.keys(players).length === 0 ? 'left' : 'right' // Define o lado do jogador
         };
 
         if (Object.keys(players).length === 2) {

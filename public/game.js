@@ -8,12 +8,18 @@ let playerPaddle = { x: 0, y: canvas.height / 2 - paddleHeight / 2 };
 let opponentPaddles = {}; // Armazena as raquetes dos oponentes
 let playerColor = '#fff';
 let opponentColors = {};
+let playerSide = 'left';
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     paddleHeight = canvas.height / 6;
     playerPaddle.y = canvas.height / 2 - paddleHeight / 2;
+    if (playerSide === 'right') {
+        playerPaddle.x = canvas.width - paddleWidth;
+    } else {
+        playerPaddle.x = 0;
+    }
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
@@ -35,6 +41,7 @@ function draw() {
     // Desenhar a bola
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2, true);
+    ctx.fillStyle = '#fff';
     ctx.fill();
 }
 
@@ -54,10 +61,15 @@ socket.on('currentState', (state) => {
     opponentColors = {};
     for (let id in state.players) {
         if (id !== socket.id) {
-            opponentPaddles[id] = { x: canvas.width - paddleWidth, y: state.players[id].paddleY };
+            let side = state.players[id].side === 'left' ? 0 : canvas.width - paddleWidth;
+            opponentPaddles[id] = { x: side, y: state.players[id].paddleY };
             opponentColors[id] = state.players[id].color;
         } else {
             playerColor = state.players[id].color;
+            playerSide = state.players[id].side;
+            if (playerSide === 'right') {
+                playerPaddle.x = canvas.width - paddleWidth;
+            }
         }
     }
     ball = state.ball;
@@ -65,7 +77,8 @@ socket.on('currentState', (state) => {
 
 socket.on('newPlayer', (data) => {
     if (data.playerId !== socket.id) {
-        opponentPaddles[data.playerId] = { x: canvas.width - paddleWidth, y: data.playerData.paddleY };
+        let side = data.playerData.side === 'left' ? 0 : canvas.width - paddleWidth;
+        opponentPaddles[data.playerId] = { x: side, y: data.playerData.paddleY };
         opponentColors[data.playerId] = data.playerData.color;
     }
 });
