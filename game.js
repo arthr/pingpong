@@ -46,16 +46,29 @@ function moveBall() {
     if (ballX + 10 > canvas.width || ballX - 10 < 0) {
         ballSpeedX = -ballSpeedX;
     }
+
+    socket.emit('ballData', { x: ballX, y: ballY });
 }
 
 function movePaddle(event) {
     let y = event.clientY || event.touches[0].clientY;
     let rect = canvas.getBoundingClientRect();
     playerPaddle.y = y - rect.top - paddleHeight / 2;
+
+    socket.emit('movePaddle', { y: playerPaddle.y });
 }
 
 canvas.addEventListener('mousemove', movePaddle);
 canvas.addEventListener('touchmove', movePaddle);
+
+socket.on('movePaddle', (data) => {
+    opponentPaddle.y = data.y;
+});
+
+socket.on('ballData', (data) => {
+    ballX = data.x;
+    ballY = data.y;
+});
 
 function gameLoop() {
     draw();
