@@ -18,6 +18,7 @@ let isDragging = false; // Variável para rastrear se a barra está sendo arrast
 let isWaitingForPlayers = true; // Variável para rastrear se estamos aguardando mais jogadores
 let currentPlayers = 0; // Número atual de jogadores
 let countdown = 3; // Contagem regressiva para o início do jogo
+let scores = { left: 0, right: 0 }; // Placar
 
 function resizeCanvas() {
     canvas.width = GAME_WIDTH;
@@ -70,6 +71,13 @@ function draw() {
         ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2, true);
         ctx.fillStyle = '#fff';
         ctx.fill();
+
+        // Desenhar o placar
+        ctx.fillStyle = '#fff';
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(scores.left, GAME_WIDTH / 4, 50);
+        ctx.fillText(scores.right, 3 * GAME_WIDTH / 4, 50);
     }
 }
 
@@ -150,6 +158,7 @@ socket.on('currentState', (state) => {
         }
     }
     ball = state.ball;
+    scores = state.scores; // Atualiza o placar
 
     // Atualizar número atual de jogadores
     currentPlayers = playerCount;
@@ -217,7 +226,8 @@ socket.on('ballData', (data) => {
 });
 
 socket.on('resetBall', (data) => {
-    ball = data;
+    ball = data.ball;
+    scores = data.scores; // Atualiza o placar
 });
 
 function startCountdown() {

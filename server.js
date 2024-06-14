@@ -13,6 +13,7 @@ app.use(express.static('public'));
 let players = {}; // Armazena o estado dos jogadores
 let ball = { x: 400, y: 300, speedX: 0, speedY: 0 }; // Estado inicial da bola
 let playerColors = ['#ff0000', '#0000ff']; // Cores dos jogadores
+let scores = { left: 0, right: 0 }; // Placar
 
 function resetBall() {
     ball.x = 400;
@@ -43,7 +44,7 @@ io.on('connection', (socket) => {
         };
     }
 
-    socket.emit('currentState', { players, ball });
+    socket.emit('currentState', { players, ball, scores });
 
     socket.broadcast.emit('newPlayer', { playerId: socket.id, playerData: players[socket.id] });
 
@@ -54,7 +55,7 @@ io.on('connection', (socket) => {
 
         if (wasPlayer && Object.keys(players).filter(id => players[id].isPlayer).length < 2) {
             resetBall();
-            io.emit('resetBall', ball); // Envia a posição resetada da bola aos clientes
+            io.emit('resetBall', { ball, scores }); // Envia a posição resetada da bola e o placar aos clientes
         }
 
         socket.broadcast.emit('playerDisconnected', socket.id);
@@ -99,10 +100,17 @@ setInterval(() => {
             ball.speedX = -ball.speedX;
         }
 
-        // Reiniciar a bola se ela colidir com as áreas atrás das raquetes
-        if (ball.x - 10 < 0 || ball.x + 10 > 800) {
+        // Verificar se a bola colidiu com as áreas atrás das raquetes
+        if (ball.x - 10 < 0) {
+            scores.right++;
             resetBall();
-            io.emit('resetBall', ball);
+            io.emit('resetBall', { ball, scores });
+        }
+
+        if (ball.x + 10 > 800) {
+            scores.left++;
+            resetBall();
+            io.emit('resetBall', { ball, scores });
         }
 
         io.emit('ballData', ball);
