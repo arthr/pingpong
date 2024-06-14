@@ -17,8 +17,8 @@ let playerColors = ['#ff0000', '#0000ff']; // Cores dos jogadores
 function resetBall() {
     ball.x = 400;
     ball.y = 300;
-    ball.speedX = 0;
-    ball.speedY = 0;
+    ball.speedX = 5;
+    ball.speedY = 5;
 }
 
 io.on('connection', (socket) => {
@@ -35,8 +35,7 @@ io.on('connection', (socket) => {
         };
 
         if (Object.keys(players).length === 2) {
-            ball.speedX = 5;
-            ball.speedY = 5;
+            resetBall();
         }
     } else {
         players[socket.id] = {
@@ -83,12 +82,27 @@ setInterval(() => {
         ball.x += ball.speedX;
         ball.y += ball.speedY;
 
+        // Colisão com as paredes superior e inferior
         if (ball.y + 10 > 600 || ball.y - 10 < 0) {
             ball.speedY = -ball.speedY;
         }
 
-        if (ball.x + 10 > 800 || ball.x - 10 < 0) {
+        // Colisão com as raquetes dos jogadores
+        const playerLeft = Object.values(players).find(p => p.side === 'left' && p.isPlayer);
+        const playerRight = Object.values(players).find(p => p.side === 'right' && p.isPlayer);
+
+        if (playerLeft && ball.x - 10 < 20 && ball.y > playerLeft.paddleY && ball.y < playerLeft.paddleY + 100) {
             ball.speedX = -ball.speedX;
+        }
+
+        if (playerRight && ball.x + 10 > 780 && ball.y > playerRight.paddleY && ball.y < playerRight.paddleY + 100) {
+            ball.speedX = -ball.speedX;
+        }
+
+        // Reiniciar a bola se ela colidir com as áreas atrás das raquetes
+        if (ball.x - 10 < 0 || ball.x + 10 > 800) {
+            resetBall();
+            io.emit('resetBall', ball);
         }
 
         io.emit('ballData', ball);

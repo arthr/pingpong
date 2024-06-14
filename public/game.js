@@ -5,10 +5,11 @@ const ctx = canvas.getContext('2d');
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 const MIN_PLAYERS = 2;
+const PADDLE_OFFSET = 20; // Offset das raquetes das paredes
 
 let paddleWidth = 10, paddleHeight = 100;
 let ball = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2 };
-let playerPaddle = { x: 0, y: GAME_HEIGHT / 2 - paddleHeight / 2 };
+let playerPaddle = { x: PADDLE_OFFSET, y: GAME_HEIGHT / 2 - paddleHeight / 2 };
 let opponentPaddles = {}; // Armazena as raquetes dos oponentes
 let playerColor = '#fff';
 let opponentColors = {};
@@ -24,9 +25,9 @@ function resizeCanvas() {
     paddleHeight = canvas.height / 6;
     playerPaddle.y = canvas.height / 2 - paddleHeight / 2;
     if (playerSide === 'right') {
-        playerPaddle.x = canvas.width - paddleWidth;
+        playerPaddle.x = canvas.width - paddleWidth - PADDLE_OFFSET;
     } else {
-        playerPaddle.x = 0;
+        playerPaddle.x = PADDLE_OFFSET;
     }
 }
 resizeCanvas();
@@ -96,7 +97,7 @@ function touchMove(event) {
 
     if (isDragging) {
         let deltaY = touchY - rect.top - paddleHeight / 2;
-        playerPaddle.y += deltaY - playerPaddle.y; // Corrigir movimentação da raquete
+        playerPaddle.y = deltaY;
 
         // Limitar o movimento da raquete dentro dos limites da área jogável
         if (playerPaddle.y < 0) {
@@ -136,14 +137,14 @@ socket.on('currentState', (state) => {
         if (state.players[id].isPlayer) {
             playerCount++;
             if (id !== socket.id) {
-                let side = state.players[id].side === 'left' ? 0 : canvas.width - paddleWidth;
+                let side = state.players[id].side === 'left' ? PADDLE_OFFSET : canvas.width - paddleWidth - PADDLE_OFFSET;
                 opponentPaddles[id] = { x: side, y: state.players[id].paddleY };
                 opponentColors[id] = state.players[id].color;
             } else {
                 playerColor = state.players[id].color;
                 playerSide = state.players[id].side;
                 if (playerSide === 'right') {
-                    playerPaddle.x = canvas.width - paddleWidth;
+                    playerPaddle.x = canvas.width - paddleWidth - PADDLE_OFFSET;
                 }
             }
         }
@@ -166,7 +167,7 @@ socket.on('currentState', (state) => {
 
 socket.on('newPlayer', (data) => {
     if (data.playerData.isPlayer) {
-        let side = data.playerData.side === 'left' ? 0 : canvas.width - paddleWidth;
+        let side = data.playerData.side === 'left' ? PADDLE_OFFSET : canvas.width - paddleWidth - PADDLE_OFFSET;
         opponentPaddles[data.playerId] = { x: side, y: data.playerData.paddleY };
         opponentColors[data.playerId] = data.playerData.color;
 
