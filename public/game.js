@@ -12,6 +12,7 @@ let opponentPaddles = {}; // Armazena as raquetes dos oponentes
 let playerColor = '#fff';
 let opponentColors = {};
 let playerSide = 'left';
+let isDragging = false; // Variável para rastrear se a barra está sendo arrastada
 
 function resizeCanvas() {
     canvas.width = GAME_WIDTH;
@@ -65,9 +66,44 @@ function movePaddle(event) {
     socket.emit('movePaddle', { y: playerPaddle.y });
 }
 
+// Função para mover a barra ao "empurrar" o dedo
+function touchMove(event) {
+    let touchY = event.touches[0].clientY;
+    let rect = canvas.getBoundingClientRect();
 
+    if (isDragging) {
+        let deltaY = touchY - rect.top - paddleHeight / 2;
+        playerPaddle.y = deltaY;
+
+        // Limitar o movimento da raquete dentro dos limites da área jogável
+        if (playerPaddle.y < 0) {
+            playerPaddle.y = 0;
+        } else if (playerPaddle.y + paddleHeight > GAME_HEIGHT) {
+            playerPaddle.y = GAME_HEIGHT - paddleHeight;
+        }
+
+        socket.emit('movePaddle', { y: playerPaddle.y });
+    }
+
+    event.preventDefault(); // Prevenir o comportamento padrão
+}
+
+function startDrag(event) {
+    isDragging = true;
+    touchMove(event);
+}
+
+function endDrag() {
+    isDragging = false;
+}
+
+canvas.addEventListener('mousedown', movePaddle);
 canvas.addEventListener('mousemove', movePaddle);
-canvas.addEventListener('touchmove', movePaddle);
+
+canvas.addEventListener('touchstart', startDrag);
+canvas.addEventListener('touchmove', touchMove);
+canvas.addEventListener('touchend', endDrag);
+canvas.addEventListener('touchcancel', endDrag);
 
 socket.on('currentState', (state) => {
     opponentPaddles = {};
@@ -115,50 +151,9 @@ socket.on('resetBall', (data) => {
     ball = data;
 });
 
-function moveBall() {
-    ball.x += ball.speedX;
-    ball.y += ball.speedY;
-
-    // Colisão com as paredes superior e inferior
-    if (ball.y + 10 > GAME_HEIGHT || ball.y - 10 < 0) {
-        ball.speedY = -ball.speedY;
-    }
-
-    // Colisão com as raquetes dos jogadores
-    if (ball.x - 10 < playerPaddle.x + paddleWidth &&
-        ball.y > playerPaddle.y &&
-        ball.y < playerPaddle.y + paddleHeight) {
-        ball.speedX = -ball.speedX;
-    }
-
-    for (let id in opponentPaddles) {
-        let paddle = opponentPaddles[id];
-        if (ball.x + 10 > paddle.x &&
-            ball.y > paddle.y &&
-            ball.y < paddle.y + paddleHeight) {
-            ball.speedX = -ball.speedX;
-        }
-    }
-
-    // Colisão com as paredes esquerda e direita
-    if (ball.x + 10 > GAME_WIDTH || ball.x - 10 < 0) {
-        ball.speedX = -ball.speedX;
-    }
-
-    socket.emit('ballData', ball);
-}
-
 function gameLoop() {
     draw();
     moveBall(); // Chama a função moveBall em cada frame
-    requestAnimationFrame(gameLoop);
-}
-
-gameLoop();
-
-
-function gameLoop() {
-    draw();
     requestAnimationFrame(gameLoop);
 }
 
